@@ -76,4 +76,12 @@ public class DevicesController : ControllerBase
         var logs = await _actionLogRepository.GetLogsAsync(page, limit);
         return Ok(logs);
     }
+
+
+    [HttpGet("devices/{deviceId}/logs")]
+    public async Task<IActionResult> GetDeviceLogs(Guid deviceId, [FromQuery] int page = 1, [FromQuery] int limit = 20)
+    {
+        var logs = await _actionLogRepository.GetLogsByDeviceIdAsync(deviceId, page, limit);
+        return Ok(logs);
+    }
 }

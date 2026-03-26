@@ -28,4 +28,14 @@ public class ActionLogRepository : IActionLogRepository
         await _context.ActionLogs.AddAsync(log);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<ActionLog>> GetLogsByDeviceIdAsync(Guid deviceId, int page = 1, int limit = 20)
+    {
+        return await _context.ActionLogs
+            .Where(log => log.LogdeviceId == deviceId) // Lọc đúng ID của thiết bị
+            .OrderByDescending(log => log.Timestamp)   // Sắp xếp mới nhất lên đầu
+            .Skip((page - 1) * limit)                  // Phân trang
+            .Take(limit)
+            .ToListAsync();
+    }
 }
