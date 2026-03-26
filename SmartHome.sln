@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CF0A16B8-9C50-48BC-A491-08A8D8176A9E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHome.Domain", "src\SmartHome.Domain\SmartHome.Domain.csproj", "{C4E3A39B-5FB5-4799-8ADF-A087765C827B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHome.Application", "src\SmartHome.Application\SmartHome.Application.csproj", "{2913BFA4-D8DC-46DD-9861-58C7B3F47DAF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHome.Infrastructure", "src\SmartHome.Infrastructure\SmartHome.Infrastructure.csproj", "{E29C2B82-8B8E-4594-BE45-84590560B9F1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartHome.API", "src\SmartHome.API\SmartHome.API.csproj", "{80654667-E1E2-4E44-B83D-3553FEA6B80D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C4E3A39B-5FB5-4799-8ADF-A087765C827B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C4E3A39B-5FB5-4799-8ADF-A087765C827B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C4E3A39B-5FB5-4799-8ADF-A087765C827B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C4E3A39B-5FB5-4799-8ADF-A087765C827B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2913BFA4-D8DC-46DD-9861-58C7B3F47DAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2913BFA4-D8DC-46DD-9861-58C7B3F47DAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2913BFA4-D8DC-46DD-9861-58C7B3F47DAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2913BFA4-D8DC-46DD-9861-58C7B3F47DAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E29C2B82-8B8E-4594-BE45-84590560B9F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E29C2B82-8B8E-4594-BE45-84590560B9F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E29C2B82-8B8E-4594-BE45-84590560B9F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E29C2B82-8B8E-4594-BE45-84590560B9F1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80654667-E1E2-4E44-B83D-3553FEA6B80D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80654667-E1E2-4E44-B83D-3553FEA6B80D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80654667-E1E2-4E44-B83D-3553FEA6B80D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80654667-E1E2-4E44-B83D-3553FEA6B80D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C4E3A39B-5FB5-4799-8ADF-A087765C827B} = {CF0A16B8-9C50-48BC-A491-08A8D8176A9E}
+		{2913BFA4-D8DC-46DD-9861-58C7B3F47DAF} = {CF0A16B8-9C50-48BC-A491-08A8D8176A9E}
+		{E29C2B82-8B8E-4594-BE45-84590560B9F1} = {CF0A16B8-9C50-48BC-A491-08A8D8176A9E}
+		{80654667-E1E2-4E44-B83D-3553FEA6B80D} = {CF0A16B8-9C50-48BC-A491-08A8D8176A9E}
+	EndGlobalSection
+EndGlobal

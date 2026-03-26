@@ -1,0 +1,12 @@
+# Bỏ qua thư mục build của .NET
+bin/
+obj/
+.vs/
+
+# Bỏ qua các file theo định dạng
+*.env
+*.doc
+*.docx
+*.sql
+*.resolved
+appsettings.json
