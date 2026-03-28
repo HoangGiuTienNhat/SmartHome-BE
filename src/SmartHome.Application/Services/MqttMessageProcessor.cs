@@ -28,34 +28,101 @@ public class MqttMessageProcessor : IMqttMessageProcessor
         _logger = logger;
     }
 
+    // public async Task ProcessMessageAsync(string feedKey, string payload)
+    // {
+    //     var device = await _deviceRepository.GetByFeedKeyAsync(feedKey);
+    //     if (device == null || device is not Sensor sensor)
+    //     {
+    //         _logger.LogWarning("FeedKey {FeedKey} not mapped to any Sensor device.", feedKey);
+    //         return;
+    //     }
+
+    //     if (!decimal.TryParse(payload, out decimal value))
+    //     {
+    //         _logger.LogWarning("Invalid payload {Payload} for feed {FeedKey}", payload, feedKey);
+    //         return;
+    //     }
+
+    //     // 1. Save sensor data
+    //     var sensorData = new SensorData
+    //     {
+    //         Id = Guid.NewGuid(),
+    //         SensorDeviceId = sensor.DeviceId,
+    //         Time = DateTime.UtcNow,
+    //         Value = value
+    //     };
+    //     await _sensorDataRepository.AddAsync(sensorData);
+
+    //     // 2. Automation Logic check
+    //     await VerifyAutomationThresholds(sensor, value);
+    // }
+
+
+
+
     public async Task ProcessMessageAsync(string feedKey, string payload)
     {
         var device = await _deviceRepository.GetByFeedKeyAsync(feedKey);
-        if (device == null || device is not Sensor sensor)
+        if (device == null)
         {
-            _logger.LogWarning("FeedKey {FeedKey} not mapped to any Sensor device.", feedKey);
+            _logger.LogWarning("FeedKey {FeedKey} not found in database.", feedKey);
             return;
         }
 
-        if (!decimal.TryParse(payload, out decimal value))
+        // ==========================================
+        // TRƯỜNG HỢP 1: DỮ LIỆU TỪ CẢM BIẾN (SENSOR)
+        // ==========================================
+        if (device is Sensor sensor)
         {
-            _logger.LogWarning("Invalid payload {Payload} for feed {FeedKey}", payload, feedKey);
-            return;
+            if (!decimal.TryParse(payload, out decimal value)) return;
+
+            // 1. Lưu data cảm biến
+            var sensorData = new SensorData
+            {
+                Id = Guid.NewGuid(),
+                SensorDeviceId = sensor.DeviceId,
+                Time = DateTime.UtcNow,
+                Value = value
+            };
+            await _sensorDataRepository.AddAsync(sensorData);
+
+            // 2. Chạy logic tự động hóa
+            await VerifyAutomationThresholds(sensor, value);
         }
-
-        // 1. Save sensor data
-        var sensorData = new SensorData
+        // ==========================================
+        // TRƯỜNG HỢP 2: PHẢN HỒI TỪ THIẾT BỊ ĐẦU RA (OUTPUT)
+        // ==========================================
+        else if (device is OutputDevice outputDevice)
         {
-            Id = Guid.NewGuid(),
-            SensorDeviceId = sensor.DeviceId,
-            Time = DateTime.UtcNow,
-            Value = value
-        };
-        await _sensorDataRepository.AddAsync(sensorData);
+            // Chuyển đổi payload từ Adafruit ("1" hoặc "0") sang Enum
+            DeviceStatus incomingStatus = payload == "1" ? DeviceStatus.ON : DeviceStatus.OFF;
 
-        // 2. Automation Logic check
-        await VerifyAutomationThresholds(sensor, value);
+            // CHỈ LƯU LOG NẾU TRẠNG THÁI THỰC SỰ THAY ĐỔI
+            // (Tránh trùng lặp log khi Backend vừa gửi lệnh đi và Adafruit dội ngược tín hiệu lại)
+            if (outputDevice.OnOffState != incomingStatus)
+            {
+                outputDevice.OnOffState = incomingStatus;
+                outputDevice.UpdateDate = DateTime.UtcNow;
+                await _deviceRepository.UpdateAsync(outputDevice);
+
+                var log = new ActionLog
+                {
+                    LogsId = Guid.NewGuid(),
+                    Timestamp = DateTime.UtcNow,
+                    LogType = LogType.MANUAL, // Hoặc bạn có thể thêm LogType.PHYSICAL vào Enum để phân biệt
+                    DeviceName = outputDevice.Name,
+                    Action = $"Turn {incomingStatus}",
+                    Detail = $"Device state synced from external action (Adafruit/Physical switch).",
+                    LogdeviceId = outputDevice.DeviceId
+                };
+                await _actionLogRepository.AddAsync(log);
+                
+                _logger.LogInformation($"[SYNC] Đã đồng bộ trạng thái {outputDevice.Name} thành {incomingStatus} từ Adafruit.");
+            }
+        }
     }
+
+
 
     private async Task VerifyAutomationThresholds(Sensor sensor, decimal value)
     {

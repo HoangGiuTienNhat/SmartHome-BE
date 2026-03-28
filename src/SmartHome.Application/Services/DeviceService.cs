@@ -98,11 +98,15 @@ public class DeviceService : IDeviceService
         await _deviceRepository.AddAsync(device);
         
         // Auto subscribe for sensor data if it's a sensor
-        if (device.Type == DeviceType.SENSOR)
-        {
-            await _mqttService.SubscribeAsync(device.FeedKey);
-        }
+        // if (device.Type == DeviceType.SENSOR)
+        // {
+        //     await _mqttService.SubscribeAsync(device.FeedKey);
+        // }
 
+
+        // Xóa lệnh if đi, giữ lại dòng này cho mọi thiết bị:
+        await _mqttService.SubscribeAsync(device.FeedKey);
+        
         return MapToResponse(device);
     }
 
