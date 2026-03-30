@@ -95,8 +95,12 @@ public class MqttMessageProcessor : IMqttMessageProcessor
         else if (device is OutputDevice outputDevice)
         {
             // Chuyển đổi payload từ Adafruit ("1" hoặc "0") sang Enum
-            DeviceStatus incomingStatus = payload == "1" ? DeviceStatus.ON : DeviceStatus.OFF;
-
+            // DeviceStatus incomingStatus = payload == "1" ? DeviceStatus.ON : DeviceStatus.OFF;
+            // Sửa lại dòng gán incomingStatus
+            string cleanPayload = payload.Trim().ToUpper();
+            DeviceStatus incomingStatus = (cleanPayload == "1" || cleanPayload == "ON" || cleanPayload == "TRUE") 
+                                        ? DeviceStatus.ON 
+                                        : DeviceStatus.OFF;
             // CHỈ LƯU LOG NẾU TRẠNG THÁI THỰC SỰ THAY ĐỔI
             // (Tránh trùng lặp log khi Backend vừa gửi lệnh đi và Adafruit dội ngược tín hiệu lại)
             if (outputDevice.OnOffState != incomingStatus)
