@@ -14,17 +14,20 @@ public class DeviceService : IDeviceService
     private readonly IRoomRepository _roomRepository;
     private readonly IActionLogRepository _actionLogRepository;
     private readonly IMqttService _mqttService;
+    private readonly IAdafruitApiService _adafruitApiService;
 
     public DeviceService(
         IDeviceRepository deviceRepository,
         IRoomRepository roomRepository,
         IActionLogRepository actionLogRepository,
-        IMqttService mqttService)
+        IMqttService mqttService,
+        IAdafruitApiService adafruitApiService)
     {
         _deviceRepository = deviceRepository;
         _roomRepository = roomRepository;
         _actionLogRepository = actionLogRepository;
         _mqttService = mqttService;
+        _adafruitApiService = adafruitApiService;
     }
 
     public async Task<IEnumerable<DeviceResponse>> GetDevicesForRoomAsync(Guid userId, Guid roomId)
@@ -93,6 +96,13 @@ public class DeviceService : IDeviceService
         else
         {
             throw new Exception("Invalid device type.");
+        }
+
+        // 1. Tự động tạo Feed trên Adafruit IO trước khi lưu vào DB
+        var success = await _adafruitApiService.CreateFeedAsync(device.Name, device.FeedKey);
+        if (!success)
+        {
+            throw new Exception("Failed to create feed on Adafruit IO. Device creation aborted.");
         }
 
         await _deviceRepository.AddAsync(device);

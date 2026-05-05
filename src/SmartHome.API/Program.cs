@@ -28,6 +28,7 @@ builder.Services.AddScoped<ISensorDataRepository, SensorDataRepository>();
 builder.Services.AddScoped<IActionLogRepository, ActionLogRepository>();
 
 // Services
+builder.Services.AddHttpClient<IAdafruitApiService, AdafruitApiService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
