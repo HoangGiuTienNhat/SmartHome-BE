@@ -122,7 +122,8 @@
 * **Body:**
 ```json
 {
-  "status": "ON" // string (Enum: "ON", "OFF", "AUTO")
+  "status": "ON", // string (Enum: "ON", "OFF", "AUTO")
+  "value": 50     // decimal (tùy chọn, ví dụ: độ sáng, tốc độ quạt)
 }
 ```
 

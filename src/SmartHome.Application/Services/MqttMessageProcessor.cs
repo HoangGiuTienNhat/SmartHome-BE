@@ -94,18 +94,27 @@ public class MqttMessageProcessor : IMqttMessageProcessor
         // ==========================================
         else if (device is OutputDevice outputDevice)
         {
-            // Chuyển đổi payload từ Adafruit ("1" hoặc "0") sang Enum
-            // DeviceStatus incomingStatus = payload == "1" ? DeviceStatus.ON : DeviceStatus.OFF;
-            // Sửa lại dòng gán incomingStatus
             string cleanPayload = payload.Trim().ToUpper();
-            DeviceStatus incomingStatus = (cleanPayload == "1" || cleanPayload == "ON" || cleanPayload == "TRUE") 
-                                        ? DeviceStatus.ON 
-                                        : DeviceStatus.OFF;
-            // CHỈ LƯU LOG NẾU TRẠNG THÁI THỰC SỰ THAY ĐỔI
-            // (Tránh trùng lặp log khi Backend vừa gửi lệnh đi và Adafruit dội ngược tín hiệu lại)
-            if (outputDevice.OnOffState != incomingStatus)
+            DeviceStatus incomingStatus;
+            decimal? incomingValue = outputDevice.CurrentValue;
+
+            if (decimal.TryParse(cleanPayload, out decimal numericValue))
+            {
+                incomingStatus = numericValue > 0 ? DeviceStatus.ON : DeviceStatus.OFF;
+                incomingValue = numericValue;
+            }
+            else
+            {
+                incomingStatus = (cleanPayload == "ON" || cleanPayload == "TRUE" || cleanPayload == "AUTO") 
+                                ? DeviceStatus.ON 
+                                : DeviceStatus.OFF;
+                if (cleanPayload == "AUTO") incomingStatus = DeviceStatus.AUTO;
+            }
+
+            if (outputDevice.OnOffState != incomingStatus || outputDevice.CurrentValue != incomingValue)
             {
                 outputDevice.OnOffState = incomingStatus;
+                outputDevice.CurrentValue = incomingValue;
                 outputDevice.UpdateDate = DateTime.UtcNow;
                 await _deviceRepository.UpdateAsync(outputDevice);
 
@@ -113,15 +122,17 @@ public class MqttMessageProcessor : IMqttMessageProcessor
                 {
                     LogsId = Guid.NewGuid(),
                     Timestamp = DateTime.UtcNow,
-                    LogType = LogType.MANUAL, // Hoặc bạn có thể thêm LogType.PHYSICAL vào Enum để phân biệt
+                    LogType = LogType.MANUAL,
                     DeviceName = outputDevice.Name,
-                    Action = $"Turn {incomingStatus}",
-                    Detail = $"Device state synced from external action (Adafruit/Physical switch).",
+                    Action = $"Sync {incomingStatus}",
+                    Detail = incomingValue.HasValue 
+                        ? $"Device state synced to {incomingStatus} with value {incomingValue} from Adafruit."
+                        : $"Device state synced to {incomingStatus} from Adafruit.",
                     LogdeviceId = outputDevice.DeviceId
                 };
                 await _actionLogRepository.AddAsync(log);
                 
-                _logger.LogInformation($"[SYNC] Đã đồng bộ trạng thái {outputDevice.Name} thành {incomingStatus} từ Adafruit.");
+                _logger.LogInformation($"[SYNC] Đã đồng bộ {outputDevice.Name} thành {incomingStatus} (Value: {incomingValue}) từ Adafruit.");
             }
         }
     }

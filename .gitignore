@@ -10,3 +10,9 @@ obj/
 *.sql
 *.resolved
 appsettings.json
+
+BACKEND_GUIDE.md
+practice-new-guide.md
+
+
+SmartHome.Tests/

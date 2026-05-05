@@ -76,6 +76,7 @@ public class SmartHomeDbContext : DbContext
             entity.ToTable("output_devices");
             entity.Property(e => e.Auto).HasColumnName("auto");
             entity.Property(e => e.OnOffState).HasColumnName("onoff_state").HasConversion<string>();
+            entity.Property(e => e.CurrentValue).HasColumnName("current_value");
         });
 
         // 5. Sensor (TPT)
@@ -167,7 +168,8 @@ public class SmartHomeDbContext : DbContext
                 UpdateDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 DroomId = roomId,
                 Auto = false,
-                OnOffState = DeviceStatus.OFF // ⚠️ sửa theo enum của bạn
+                OnOffState = DeviceStatus.OFF,
+                CurrentValue = 0m
             }
         );
 

@@ -18,4 +18,5 @@ public class UpdateDeviceRequest
 public class ControlDeviceRequest
 {
     public string Status { get; set; } = string.Empty; // "ON", "OFF", "AUTO"
+    public decimal? Value { get; set; }
 }

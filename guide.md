@@ -1,4 +1,4 @@
-# Thứ tự chạy migration
+# Thứ tự chạy migration - đây là cũ 
 ## 1. ở root (backend) : dotnet ef migrations add SeedData --project src/SmartHome.Infrastructure --startup-project src/SmartHome.API
 
 
@@ -13,9 +13,24 @@
 ## 2 . ở root chạy ni để update seed: 
 dotnet ef database update --project src/SmartHome.Infrastructure --startup-project src/SmartHome.API
 
-# chạy API
+# CHẠY MIGRATION - NEW - CHỈ CHẠY 1 LẦN ĐẦU TIÊN NẾU CÓ THAY ĐỔI DATABASE HAY SAO ĐÓ MUỐN THÊM VÀO SEEDDATA THÌ 2 BƯỚC, ADD RỒI UPDATE
+
+PS E:\bku\252\DADN\backend> dotnet nuget locals all --clear
+
+PS E:\bku\252\DADN\backend> dotnet restore
+
+
+PS E:\bku\252\DADN\backend> dotnet ef migrations add AddCurrentValueToOutputDevice --project src/SmartHome.Infrastructure --startup-project src/SmartHome.API
+
+PS E:\bku\252\DADN\backend> dotnet ef database update --project src/SmartHome.Infrastructure --startup-project src/SmartHome.API        
+
+# chạy API - CŨ
 cd src/SmartHome.API
 dotnet run
+
+# CHẠY BACKEND moi nhat  
+dotnet run --project src/SmartHome.API
+
 
 
 Now listening on: https://localhost:7096

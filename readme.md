@@ -58,7 +58,7 @@ SmartHome.Solution/
 ## 3. Thiết Kế Thực Thể (Entities) & Kiểu Dữ Liệu
 * **User:** `Id` (Guid, PK), `Email` (string, unique), `PasswordHash` (string), `FullName` (string), `Rooms` (ICollection<Room>).
 * **Room:** `Id` (Guid, PK), `UserId` (Guid, FK), `Name` (string), `Devices` (ICollection<Device>).
-* **Device:** `Id` (Guid, PK), `RoomId` (Guid, FK), `Name` (string), `Type` (Enum), `State` (Enum), `InstallDate` (DateTime), `AdafruitFeedKey` (string), `ThresholdMin` (float?, Nullable), `ThresholdMax` (float?, Nullable).
+* **Device:** `Id` (Guid, PK), `RoomId` (Guid, FK), `Name` (string), `Type` (Enum), `State` (Enum), `InstallDate` (DateTime), `AdafruitFeedKey` (string), `ThresholdMin` (float?, Nullable), `ThresholdMax` (float?, Nullable), `CurrentValue` (float?, Nullable - for Output devices).
 * **SensorData:** `Id` (Guid, PK), `DeviceId` (Guid, FK), `Value` (float), `Time` (DateTime).
 * **ActionLog:** `Id` (Guid, PK), `Timestamp` (DateTime), `LogType` (Enum), `DeviceName` (string), `Action` (string), `Detail` (string).
 

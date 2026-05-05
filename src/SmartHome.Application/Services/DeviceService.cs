@@ -166,18 +166,33 @@ public class DeviceService : IDeviceService
         }
 
         outputDevice.OnOffState = status;
+        if (request.Value.HasValue)
+        {
+            outputDevice.CurrentValue = request.Value.Value;
+        }
         outputDevice.UpdateDate = DateTime.UtcNow;
         
         await _deviceRepository.UpdateAsync(outputDevice);
 
-        // Map status to strings expected by Adafruit
-        var payloadValue = status switch
+        // Map status/value to strings expected by Adafruit
+        string payloadValue;
+        if (status == DeviceStatus.OFF)
         {
-            DeviceStatus.ON => "1",
-            DeviceStatus.OFF => "0",
-            DeviceStatus.AUTO => "AUTO",
-            _ => "0"
-        };
+            payloadValue = "0";
+        }
+        else if (status == DeviceStatus.ON && request.Value.HasValue)
+        {
+            payloadValue = request.Value.Value.ToString();
+        }
+        else
+        {
+            payloadValue = status switch
+            {
+                DeviceStatus.ON => "1",
+                DeviceStatus.AUTO => "AUTO",
+                _ => "0"
+            };
+        }
         await _mqttService.PublishAsync(outputDevice.FeedKey, payloadValue);
 
         var log = new ActionLog
@@ -187,7 +202,9 @@ public class DeviceService : IDeviceService
             LogType = LogType.MANUAL,
             DeviceName = outputDevice.Name,
             Action = $"Turn {status}",
-            Detail = $"User turned {status} device '{outputDevice.Name}' via Interface.",
+            Detail = request.Value.HasValue 
+                ? $"User set {outputDevice.Name} to {status} with value {request.Value.Value} via Interface."
+                : $"User turned {status} device '{outputDevice.Name}' via Interface.",
             LogdeviceId = outputDevice.DeviceId
         };
         await _actionLogRepository.AddAsync(log);
@@ -208,6 +225,7 @@ public class DeviceService : IDeviceService
         {
             response.Auto = outputDevice.Auto;
             response.OnOffState = outputDevice.OnOffState.ToString();
+            response.CurrentValue = outputDevice.CurrentValue;
         }
         else if (device is Sensor sensor)
         {

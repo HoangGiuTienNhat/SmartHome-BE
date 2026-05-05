@@ -46,6 +46,7 @@ Mở rộng từ `devices` cho các thiết bị có thể điều khiển (Đè
 | `device_id` | Guid | PK, FK (`devices`) | Liên kết tới bản ghi thiết bị gốc. |
 | `auto` | boolean | Not Null | Chế độ tự động của thiết bị. |
 | `onoff_state`| string | Enum | Trạng thái hiện tại: `ON`, `OFF`, hoặc `AUTO`. |
+| `current_value`| double? | - | Giá trị hiện tại (ví dụ: tốc độ quạt, độ sáng). |
 
 ### 2.5. `sensors` (Cảm biến)
 Mở rộng từ `devices` cho các thiết bị thu thập dữ liệu (Nhiệt độ, Độ ẩm, v.v.).
