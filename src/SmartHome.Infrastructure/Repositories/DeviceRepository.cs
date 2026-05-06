@@ -36,6 +36,11 @@ public class DeviceRepository : IDeviceRepository
         return await _context.Devices.AnyAsync(d => d.FeedKey == feedKey);
     }
 
+    public async Task<bool> IsNameExistsInRoomAsync(Guid roomId, string name)
+    {
+        return await _context.Devices.AnyAsync(d => d.DroomId == roomId && d.Name == name);
+    }
+
     public async Task AddAsync(Device device)
     {
         await _context.Devices.AddAsync(device);

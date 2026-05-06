@@ -8,6 +8,7 @@ public interface IDeviceRepository
     Task<Device?> GetByIdAsync(Guid deviceId);
     Task<Device?> GetByFeedKeyAsync(string feedKey);
     Task<bool> IsFeedKeyExistsAsync(string feedKey);
+    Task<bool> IsNameExistsInRoomAsync(Guid roomId, string name);
     Task AddAsync(Device device);
     Task UpdateAsync(Device device);
     Task DeleteAsync(Device device);

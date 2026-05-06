@@ -50,6 +50,11 @@ public class DeviceService : IDeviceService
             throw new Exception("Room not found or unauthorized.");
         }
 
+        if (await _deviceRepository.IsNameExistsInRoomAsync(roomId, request.DeviceName))
+        {
+            throw new Exception($"Device name '{request.DeviceName}' already exists in this room.");
+        }
+
         string rawSlug = StringHelper.GenerateSlug(room.Name + " " + request.DeviceName);
         string finalSlug = rawSlug;
         int counter = 2;
