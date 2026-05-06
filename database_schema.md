@@ -84,4 +84,5 @@ Lưu vết các tương tác với thiết bị.
 - **Phòng -> Thiết bị**: Một-Nhiều (Một phòng có nhiều thiết bị).
 - **Thiết bị -> Thiết bị đầu ra/Cảm biến**: Một-Một (Quan hệ kế thừa).
 - **Cảm biến -> Dữ liệu cảm biến**: Một-Nhiều (Một cảm biến có nhiều dữ liệu đo đạc).
+- **Cảm biến -> Thiết bị đầu ra**: Một-Nhiều (Một cảm biến có thể điều khiển nhiều thiết bị qua `connected_sensor_id`).
 - **Thiết bị -> Nhật ký hoạt động**: Một-Nhiều (Một thiết bị có nhiều nhật ký).

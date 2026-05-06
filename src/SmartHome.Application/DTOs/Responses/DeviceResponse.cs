@@ -12,6 +12,7 @@ public class DeviceResponse
     public bool? Auto { get; set; }
     public string? OnOffState { get; set; }
     public decimal? CurrentValue { get; set; }
+    public Guid? ConnectedSensorId { get; set; }
 
     // Sensor specific
     public decimal? ThresholdMin { get; set; }

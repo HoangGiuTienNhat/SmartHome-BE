@@ -79,7 +79,8 @@ public class DeviceService : IDeviceService
                 UpdateDate = DateTime.UtcNow,
                 DroomId = roomId,
                 Auto = false,
-                OnOffState = DeviceStatus.OFF
+                OnOffState = DeviceStatus.OFF,
+                ConnectedSensorId = request.ConnectedSensorId
             };
         }
         else if (request.Type.Equals("Sensor", StringComparison.OrdinalIgnoreCase))
@@ -145,6 +146,10 @@ public class DeviceService : IDeviceService
             if (request.ThresholdMin.HasValue) sensor.ThresholdMin = request.ThresholdMin.Value;
             if (request.ThresholdMax.HasValue) sensor.ThresholdMax = request.ThresholdMax.Value;
         }
+        else if (device is OutputDevice outputDevice)
+        {
+            if (request.ConnectedSensorId.HasValue) outputDevice.ConnectedSensorId = request.ConnectedSensorId.Value;
+        }
 
         device.UpdateDate = DateTime.UtcNow;
         await _deviceRepository.UpdateAsync(device);
@@ -180,7 +185,17 @@ public class DeviceService : IDeviceService
             throw new Exception("Invalid status. Allowed: ON, OFF, AUTO");
         }
 
-        outputDevice.OnOffState = status;
+        if (status == DeviceStatus.AUTO)
+        {
+            outputDevice.Auto = true;
+            outputDevice.OnOffState = DeviceStatus.AUTO;
+        }
+        else
+        {
+            outputDevice.Auto = false;
+            outputDevice.OnOffState = status;
+        }
+
         if (request.Value.HasValue)
         {
             outputDevice.CurrentValue = request.Value.Value;
@@ -241,6 +256,7 @@ public class DeviceService : IDeviceService
             response.Auto = outputDevice.Auto;
             response.OnOffState = outputDevice.OnOffState.ToString();
             response.CurrentValue = outputDevice.CurrentValue;
+            response.ConnectedSensorId = outputDevice.ConnectedSensorId;
         }
         else if (device is Sensor sensor)
         {

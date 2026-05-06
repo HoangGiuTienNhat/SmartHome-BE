@@ -21,6 +21,13 @@ public class DeviceRepository : IDeviceRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<OutputDevice>> GetOutputDevicesBySensorIdAsync(Guid sensorId)
+    {
+        return await _context.OutputDevices
+            .Where(d => d.ConnectedSensorId == sensorId)
+            .ToListAsync();
+    }
+
     public async Task<Device?> GetByIdAsync(Guid deviceId)
     {
         return await _context.Devices.FindAsync(deviceId);

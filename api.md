@@ -80,7 +80,8 @@
 ```json
 {
   "device_name": "Đèn trần", // string
-  "type": "Output"           // string (Enum: "Output", "Sensor")
+  "type": "Output",          // string (Enum: "Output", "Sensor")
+  "connected_sensor_id": "guid" // Guid (tùy chọn, ID cảm biến liên kết để chạy AUTO)
 }
 ```
 * **Body (Trường hợp là Cảm biến - Sensor):**
@@ -102,7 +103,8 @@
 {
   "device_name": "Cảm biến nhiệt độ góc phòng", // string (tùy chọn cập nhật)
   "threshold_min": 20.0,                        // float (tùy chọn)
-  "threshold_max": 28.5                         // float (tùy chọn)
+  "threshold_max": 28.5,                        // float (tùy chọn)
+  "connected_sensor_id": "guid"                 // Guid (tùy chọn cập nhật cho Output Device)
 }
 ```
 
