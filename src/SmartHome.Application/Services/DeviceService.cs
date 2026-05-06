@@ -13,6 +13,7 @@ public class DeviceService : IDeviceService
     private readonly IDeviceRepository _deviceRepository;
     private readonly IRoomRepository _roomRepository;
     private readonly IActionLogRepository _actionLogRepository;
+    private readonly ISensorDataRepository _sensorDataRepository;
     private readonly IMqttService _mqttService;
     private readonly IAdafruitApiService _adafruitApiService;
 
@@ -20,12 +21,14 @@ public class DeviceService : IDeviceService
         IDeviceRepository deviceRepository,
         IRoomRepository roomRepository,
         IActionLogRepository actionLogRepository,
+        ISensorDataRepository sensorDataRepository,
         IMqttService mqttService,
         IAdafruitApiService adafruitApiService)
     {
         _deviceRepository = deviceRepository;
         _roomRepository = roomRepository;
         _actionLogRepository = actionLogRepository;
+        _sensorDataRepository = sensorDataRepository;
         _mqttService = mqttService;
         _adafruitApiService = adafruitApiService;
     }
@@ -185,45 +188,61 @@ public class DeviceService : IDeviceService
             throw new Exception("Invalid status. Allowed: ON, OFF, AUTO");
         }
 
+        string? payloadValue = null;
+
         if (status == DeviceStatus.AUTO)
         {
             outputDevice.Auto = true;
-            outputDevice.OnOffState = DeviceStatus.AUTO;
+            
+            // Khởi tạo trạng thái dựa trên giá trị sensor hiện tại
+            if (outputDevice.ConnectedSensorId.HasValue)
+            {
+                var sensor = await _deviceRepository.GetByIdAsync(outputDevice.ConnectedSensorId.Value) as Sensor;
+                if (sensor != null)
+                {
+                    var data = await _sensorDataRepository.GetDataForDeviceAsync(sensor.DeviceId, null, null);
+                    var latestData = data.LastOrDefault();
+
+                    if (latestData != null)
+                    {
+                        if (sensor.ThresholdMax.HasValue && latestData.Value > sensor.ThresholdMax.Value)
+                        {
+                            outputDevice.OnOffState = DeviceStatus.ON;
+                            outputDevice.CurrentValue = 50;
+                            payloadValue = "50";
+                        }
+                        else if (sensor.ThresholdMin.HasValue && latestData.Value < sensor.ThresholdMin.Value)
+                        {
+                            outputDevice.OnOffState = DeviceStatus.OFF;
+                            outputDevice.CurrentValue = 0;
+                            payloadValue = "0";
+                        }
+                        // Nếu ở giữa ngưỡng, giữ nguyên OnOffState và CurrentValue hiện tại
+                    }
+                }
+            }
         }
         else
         {
             outputDevice.Auto = false;
             outputDevice.OnOffState = status;
+            if (request.Value.HasValue)
+            {
+                outputDevice.CurrentValue = request.Value.Value;
+            }
+            
+            // Xác định payload cho Manual
+            if (status == DeviceStatus.OFF) payloadValue = "0";
+            else if (status == DeviceStatus.ON) payloadValue = request.Value?.ToString() ?? "1";
         }
 
-        if (request.Value.HasValue)
-        {
-            outputDevice.CurrentValue = request.Value.Value;
-        }
         outputDevice.UpdateDate = DateTime.UtcNow;
-        
         await _deviceRepository.UpdateAsync(outputDevice);
 
-        // Map status/value to strings expected by Adafruit
-        string payloadValue;
-        if (status == DeviceStatus.OFF)
+        if (payloadValue != null)
         {
-            payloadValue = "0";
+            await _mqttService.PublishAsync(outputDevice.FeedKey, payloadValue);
         }
-        else if (status == DeviceStatus.ON && request.Value.HasValue)
-        {
-            payloadValue = request.Value.Value.ToString();
-        }
-        else
-        {
-            payloadValue = status switch
-            {
-                DeviceStatus.ON => "1",
-                DeviceStatus.AUTO => "AUTO",
-                _ => "0"
-            };
-        }
-        await _mqttService.PublishAsync(outputDevice.FeedKey, payloadValue);
 
         var log = new ActionLog
         {

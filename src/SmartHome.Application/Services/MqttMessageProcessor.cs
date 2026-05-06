@@ -175,13 +175,14 @@ public class MqttMessageProcessor : IMqttMessageProcessor
             string payload = "0";
 
             // KỊCH BẢN 1: Vượt Max thì Bật, Dưới Min thì Tắt
+            // KỊCH BẢN 1: Vượt Max thì Bật (50), Dưới Min thì Tắt (0)
             if (sensor.ThresholdMax.HasValue && value > sensor.ThresholdMax.Value)
             {
                 // Nếu đang OFF hoặc đang ở trạng thái AUTO (chưa xác định ON/OFF)
                 if (output.OnOffState == DeviceStatus.OFF || output.OnOffState == DeviceStatus.AUTO)
                 {
                     targetStatus = DeviceStatus.ON;
-                    payload = "1";
+                    payload = "50";
                 }
             }
             else if (sensor.ThresholdMin.HasValue && value < sensor.ThresholdMin.Value)
@@ -197,7 +198,7 @@ public class MqttMessageProcessor : IMqttMessageProcessor
             if (targetStatus.HasValue)
             {
                 output.OnOffState = targetStatus.Value;
-                output.CurrentValue = (targetStatus.Value == DeviceStatus.ON) ? 1 : 0;
+                output.CurrentValue = (targetStatus.Value == DeviceStatus.ON) ? 50 : 0;
                 output.UpdateDate = DateTime.UtcNow;
                 await _deviceRepository.UpdateAsync(output);
 
