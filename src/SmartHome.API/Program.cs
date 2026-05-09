@@ -41,6 +41,18 @@ builder.Services.AddHostedService<MqttHostedService>();
 // Controllers
 builder.Services.AddControllers();
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+});
+
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["Secret"];
@@ -103,6 +115,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

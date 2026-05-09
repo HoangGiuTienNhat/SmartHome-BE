@@ -66,14 +66,33 @@ public class DevicesController : ControllerBase
     [HttpGet("devices/{deviceId}/data")]
     public async Task<IActionResult> GetSensorData(Guid deviceId, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
     {
-        var data = await _sensorDataRepository.GetDataForDeviceAsync(deviceId, startDate, endDate);
+        var userId = GetUserId();
+
+        // 1. Kiểm tra thiết bị có tồn tại và thuộc quyền sở hữu của user không
+        var device = await _deviceService.GetDeviceByIdAsync(userId, deviceId);
+        if (device == null)
+        {
+            return NotFound(new { message = $"Device with ID {deviceId} not found or you don't have permission to access it." });
+        }
+
+        // 2. Kiểm tra xem có phải là Sensor không (Hướng A: Strict Sensor Only)
+        if (device.Type != "SENSOR")
+        {
+            return BadRequest(new { 
+                message = "Invalid device type.", 
+                detail = $"Device '{device.DeviceName}' is a {device.Type}. Historical data API only supports SENSOR devices." 
+            });
+        }
+
+        // 3. Lấy dữ liệu
+        var data = await _sensorDataRepository.GetDataForDeviceAsync(userId, deviceId, startDate, endDate);
         return Ok(data);
     }
 
     [HttpGet("logs")]
     public async Task<IActionResult> GetLogs([FromQuery] int page = 1, [FromQuery] int limit = 20)
     {
-        var logs = await _actionLogRepository.GetLogsAsync(page, limit);
+        var logs = await _deviceService.GetLogsAsync(GetUserId(), page, limit);
         return Ok(logs);
     }
 
@@ -81,7 +100,7 @@ public class DevicesController : ControllerBase
     [HttpGet("devices/{deviceId}/logs")]
     public async Task<IActionResult> GetDeviceLogs(Guid deviceId, [FromQuery] int page = 1, [FromQuery] int limit = 20)
     {
-        var logs = await _actionLogRepository.GetLogsByDeviceIdAsync(deviceId, page, limit);
+        var logs = await _deviceService.GetLogsByDeviceIdAsync(GetUserId(), deviceId, page, limit);
         return Ok(logs);
     }
 }

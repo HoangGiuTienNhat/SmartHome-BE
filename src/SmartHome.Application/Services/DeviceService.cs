@@ -173,6 +173,17 @@ public class DeviceService : IDeviceService
         await _deviceRepository.DeleteAsync(device);
     }
 
+    public async Task<DeviceResponse?> GetDeviceByIdAsync(Guid userId, Guid deviceId)
+    {
+        var device = await _deviceRepository.GetByIdAsync(deviceId);
+        if (device == null) return null;
+
+        var room = await _roomRepository.GetByIdAsync(device.DroomId);
+        if (room == null || room.RuserId != userId) return null;
+
+        return MapToResponse(device);
+    }
+
     public async Task ControlDeviceAsync(Guid userId, Guid deviceId, ControlDeviceRequest request)
     {
         var device = await _deviceRepository.GetByIdAsync(deviceId);
@@ -200,7 +211,7 @@ public class DeviceService : IDeviceService
                 var sensor = await _deviceRepository.GetByIdAsync(outputDevice.ConnectedSensorId.Value) as Sensor;
                 if (sensor != null)
                 {
-                    var data = await _sensorDataRepository.GetDataForDeviceAsync(sensor.DeviceId, null, null);
+                    var data = await _sensorDataRepository.GetDataForDeviceAsync(userId, sensor.DeviceId, null, null);
                     var latestData = data.LastOrDefault();
 
                     if (latestData != null)
@@ -259,6 +270,18 @@ public class DeviceService : IDeviceService
         await _actionLogRepository.AddAsync(log);
     }
 
+    public async Task<IEnumerable<ActionLogResponse>> GetLogsAsync(Guid userId, int page, int limit)
+    {
+        var logs = await _actionLogRepository.GetLogsAsync(userId, page, limit);
+        return logs.Select(MapToLogResponse);
+    }
+
+    public async Task<IEnumerable<ActionLogResponse>> GetLogsByDeviceIdAsync(Guid userId, Guid deviceId, int page, int limit)
+    {
+        var logs = await _actionLogRepository.GetLogsByDeviceIdAsync(userId, deviceId, page, limit);
+        return logs.Select(MapToLogResponse);
+    }
+
     private DeviceResponse MapToResponse(Device device)
     {
         var response = new DeviceResponse
@@ -284,5 +307,19 @@ public class DeviceService : IDeviceService
         }
 
         return response;
+    }
+
+    private ActionLogResponse MapToLogResponse(ActionLog log)
+    {
+        return new ActionLogResponse
+        {
+            LogsId = log.LogsId,
+            Timestamp = log.Timestamp,
+            LogType = log.LogType,
+            DeviceName = log.DeviceName,
+            Action = log.Action,
+            Detail = log.Detail,
+            LogdeviceId = log.LogdeviceId
+        };
     }
 }
