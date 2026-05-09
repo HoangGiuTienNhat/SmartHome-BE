@@ -21,6 +21,13 @@ public class DeviceRepository : IDeviceRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<OutputDevice>> GetOutputDevicesBySensorIdAsync(Guid sensorId)
+    {
+        return await _context.OutputDevices
+            .Where(d => d.ConnectedSensorId == sensorId)
+            .ToListAsync();
+    }
+
     public async Task<Device?> GetByIdAsync(Guid deviceId)
     {
         return await _context.Devices.FindAsync(deviceId);
@@ -34,6 +41,11 @@ public class DeviceRepository : IDeviceRepository
     public async Task<bool> IsFeedKeyExistsAsync(string feedKey)
     {
         return await _context.Devices.AnyAsync(d => d.FeedKey == feedKey);
+    }
+
+    public async Task<bool> IsNameExistsInRoomAsync(Guid roomId, string name)
+    {
+        return await _context.Devices.AnyAsync(d => d.DroomId == roomId && d.Name == name);
     }
 
     public async Task AddAsync(Device device)

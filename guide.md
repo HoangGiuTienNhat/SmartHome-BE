@@ -31,6 +31,15 @@ dotnet run
 # CHẠY BACKEND moi nhat  
 dotnet run --project src/SmartHome.API
 
+# có update code backend thì chạy build rồi hẵng run 
+
+PS E:\bku\252\DADN\backend> dotnet build
+ xong thì 
+
+dotnet run --project src/SmartHome.API
+
+
+#
 
 
 Now listening on: https://localhost:7096

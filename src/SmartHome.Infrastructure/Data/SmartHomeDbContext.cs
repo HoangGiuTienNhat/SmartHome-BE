@@ -77,6 +77,12 @@ public class SmartHomeDbContext : DbContext
             entity.Property(e => e.Auto).HasColumnName("auto");
             entity.Property(e => e.OnOffState).HasColumnName("onoff_state").HasConversion<string>();
             entity.Property(e => e.CurrentValue).HasColumnName("current_value");
+            entity.Property(e => e.ConnectedSensorId).HasColumnName("connected_sensor_id");
+
+            entity.HasOne(od => od.ConnectedSensor)
+                  .WithMany()
+                  .HasForeignKey(od => od.ConnectedSensorId)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // 5. Sensor (TPT)

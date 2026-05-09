@@ -13,6 +13,7 @@ public class DeviceService : IDeviceService
     private readonly IDeviceRepository _deviceRepository;
     private readonly IRoomRepository _roomRepository;
     private readonly IActionLogRepository _actionLogRepository;
+    private readonly ISensorDataRepository _sensorDataRepository;
     private readonly IMqttService _mqttService;
     private readonly IAdafruitApiService _adafruitApiService;
 
@@ -20,12 +21,14 @@ public class DeviceService : IDeviceService
         IDeviceRepository deviceRepository,
         IRoomRepository roomRepository,
         IActionLogRepository actionLogRepository,
+        ISensorDataRepository sensorDataRepository,
         IMqttService mqttService,
         IAdafruitApiService adafruitApiService)
     {
         _deviceRepository = deviceRepository;
         _roomRepository = roomRepository;
         _actionLogRepository = actionLogRepository;
+        _sensorDataRepository = sensorDataRepository;
         _mqttService = mqttService;
         _adafruitApiService = adafruitApiService;
     }
@@ -48,6 +51,11 @@ public class DeviceService : IDeviceService
         if (room == null || room.RuserId != userId)
         {
             throw new Exception("Room not found or unauthorized.");
+        }
+
+        if (await _deviceRepository.IsNameExistsInRoomAsync(roomId, request.DeviceName))
+        {
+            throw new Exception($"Device name '{request.DeviceName}' already exists in this room.");
         }
 
         string rawSlug = StringHelper.GenerateSlug(room.Name + " " + request.DeviceName);
@@ -74,7 +82,8 @@ public class DeviceService : IDeviceService
                 UpdateDate = DateTime.UtcNow,
                 DroomId = roomId,
                 Auto = false,
-                OnOffState = DeviceStatus.OFF
+                OnOffState = DeviceStatus.OFF,
+                ConnectedSensorId = request.ConnectedSensorId
             };
         }
         else if (request.Type.Equals("Sensor", StringComparison.OrdinalIgnoreCase))
@@ -140,6 +149,10 @@ public class DeviceService : IDeviceService
             if (request.ThresholdMin.HasValue) sensor.ThresholdMin = request.ThresholdMin.Value;
             if (request.ThresholdMax.HasValue) sensor.ThresholdMax = request.ThresholdMax.Value;
         }
+        else if (device is OutputDevice outputDevice)
+        {
+            if (request.ConnectedSensorId.HasValue) outputDevice.ConnectedSensorId = request.ConnectedSensorId.Value;
+        }
 
         device.UpdateDate = DateTime.UtcNow;
         await _deviceRepository.UpdateAsync(device);
@@ -175,35 +188,61 @@ public class DeviceService : IDeviceService
             throw new Exception("Invalid status. Allowed: ON, OFF, AUTO");
         }
 
-        outputDevice.OnOffState = status;
-        if (request.Value.HasValue)
-        {
-            outputDevice.CurrentValue = request.Value.Value;
-        }
-        outputDevice.UpdateDate = DateTime.UtcNow;
-        
-        await _deviceRepository.UpdateAsync(outputDevice);
+        string? payloadValue = null;
 
-        // Map status/value to strings expected by Adafruit
-        string payloadValue;
-        if (status == DeviceStatus.OFF)
+        if (status == DeviceStatus.AUTO)
         {
-            payloadValue = "0";
-        }
-        else if (status == DeviceStatus.ON && request.Value.HasValue)
-        {
-            payloadValue = request.Value.Value.ToString();
+            outputDevice.Auto = true;
+            
+            // Khởi tạo trạng thái dựa trên giá trị sensor hiện tại
+            if (outputDevice.ConnectedSensorId.HasValue)
+            {
+                var sensor = await _deviceRepository.GetByIdAsync(outputDevice.ConnectedSensorId.Value) as Sensor;
+                if (sensor != null)
+                {
+                    var data = await _sensorDataRepository.GetDataForDeviceAsync(sensor.DeviceId, null, null);
+                    var latestData = data.LastOrDefault();
+
+                    if (latestData != null)
+                    {
+                        if (sensor.ThresholdMax.HasValue && latestData.Value > sensor.ThresholdMax.Value)
+                        {
+                            outputDevice.OnOffState = DeviceStatus.ON;
+                            outputDevice.CurrentValue = 50;
+                            payloadValue = "50";
+                        }
+                        else if (sensor.ThresholdMin.HasValue && latestData.Value < sensor.ThresholdMin.Value)
+                        {
+                            outputDevice.OnOffState = DeviceStatus.OFF;
+                            outputDevice.CurrentValue = 0;
+                            payloadValue = "0";
+                        }
+                        // Nếu ở giữa ngưỡng, giữ nguyên OnOffState và CurrentValue hiện tại
+                    }
+                }
+            }
         }
         else
         {
-            payloadValue = status switch
+            outputDevice.Auto = false;
+            outputDevice.OnOffState = status;
+            if (request.Value.HasValue)
             {
-                DeviceStatus.ON => "1",
-                DeviceStatus.AUTO => "AUTO",
-                _ => "0"
-            };
+                outputDevice.CurrentValue = request.Value.Value;
+            }
+            
+            // Xác định payload cho Manual
+            if (status == DeviceStatus.OFF) payloadValue = "0";
+            else if (status == DeviceStatus.ON) payloadValue = request.Value?.ToString() ?? "1";
         }
-        await _mqttService.PublishAsync(outputDevice.FeedKey, payloadValue);
+
+        outputDevice.UpdateDate = DateTime.UtcNow;
+        await _deviceRepository.UpdateAsync(outputDevice);
+
+        if (payloadValue != null)
+        {
+            await _mqttService.PublishAsync(outputDevice.FeedKey, payloadValue);
+        }
 
         var log = new ActionLog
         {
@@ -236,6 +275,7 @@ public class DeviceService : IDeviceService
             response.Auto = outputDevice.Auto;
             response.OnOffState = outputDevice.OnOffState.ToString();
             response.CurrentValue = outputDevice.CurrentValue;
+            response.ConnectedSensorId = outputDevice.ConnectedSensorId;
         }
         else if (device is Sensor sensor)
         {

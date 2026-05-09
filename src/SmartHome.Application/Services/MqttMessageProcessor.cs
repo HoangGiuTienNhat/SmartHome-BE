@@ -97,24 +97,44 @@ public class MqttMessageProcessor : IMqttMessageProcessor
             string cleanPayload = payload.Trim().ToUpper();
             DeviceStatus incomingStatus;
             decimal? incomingValue = outputDevice.CurrentValue;
+            bool incomingAuto = outputDevice.Auto;
 
-            if (decimal.TryParse(cleanPayload, out decimal numericValue))
+            if (cleanPayload == "AUTO")
+            {
+                incomingStatus = DeviceStatus.AUTO;
+                incomingAuto = true;
+            }
+            else if (decimal.TryParse(cleanPayload, out decimal numericValue))
             {
                 incomingStatus = numericValue > 0 ? DeviceStatus.ON : DeviceStatus.OFF;
                 incomingValue = numericValue;
+                
+                // CHỈ CHUYỂN SANG MANUAL NẾU CÓ SỰ THAY ĐỔI TRẠNG THÁI THỰC SỰ
+                // Nếu tin nhắn nhận về giống hệt trạng thái DB hiện tại, coi đó là tin nhắn xác nhận (Echo)
+                if (outputDevice.Auto && (incomingStatus != outputDevice.OnOffState || incomingValue != outputDevice.CurrentValue))
+                {
+                    incomingAuto = false;
+                }
             }
             else
             {
-                incomingStatus = (cleanPayload == "ON" || cleanPayload == "TRUE" || cleanPayload == "AUTO") 
+                incomingStatus = (cleanPayload == "ON" || cleanPayload == "TRUE") 
                                 ? DeviceStatus.ON 
                                 : DeviceStatus.OFF;
-                if (cleanPayload == "AUTO") incomingStatus = DeviceStatus.AUTO;
+                
+                // Tương tự, kiểm tra can thiệp thủ công
+                if (outputDevice.Auto && incomingStatus != outputDevice.OnOffState)
+                {
+                    incomingAuto = false;
+                }
             }
 
-            if (outputDevice.OnOffState != incomingStatus || outputDevice.CurrentValue != incomingValue)
+            if (outputDevice.OnOffState != incomingStatus || outputDevice.CurrentValue != incomingValue || outputDevice.Auto != incomingAuto)
             {
+                bool modeChanged = outputDevice.Auto != incomingAuto;
                 outputDevice.OnOffState = incomingStatus;
                 outputDevice.CurrentValue = incomingValue;
+                outputDevice.Auto = incomingAuto;
                 outputDevice.UpdateDate = DateTime.UtcNow;
                 await _deviceRepository.UpdateAsync(outputDevice);
 
@@ -124,15 +144,17 @@ public class MqttMessageProcessor : IMqttMessageProcessor
                     Timestamp = DateTime.UtcNow,
                     LogType = LogType.MANUAL,
                     DeviceName = outputDevice.Name,
-                    Action = $"Sync {incomingStatus}",
-                    Detail = incomingValue.HasValue 
-                        ? $"Device state synced to {incomingStatus} with value {incomingValue} from Adafruit."
-                        : $"Device state synced to {incomingStatus} from Adafruit.",
+                    Action = modeChanged && !incomingAuto ? "Override Manual" : $"Sync {incomingStatus}",
+                    Detail = incomingAuto 
+                        ? $"Device state confirmed/synced in AUTO mode from Adafruit."
+                        : (modeChanged 
+                            ? $"User intervened via external dashboard. Mode switched to MANUAL. State: {incomingStatus}"
+                            : $"Device state synced to {incomingStatus} in MANUAL mode from Adafruit."),
                     LogdeviceId = outputDevice.DeviceId
                 };
                 await _actionLogRepository.AddAsync(log);
                 
-                _logger.LogInformation($"[SYNC] Đã đồng bộ {outputDevice.Name} thành {incomingStatus} (Value: {incomingValue}) từ Adafruit.");
+                _logger.LogInformation($"[SYNC] {outputDevice.Name} -> Status: {incomingStatus}, Auto: {incomingAuto} (From Adafruit)");
             }
         }
     }
@@ -143,56 +165,58 @@ public class MqttMessageProcessor : IMqttMessageProcessor
     {
         if (!sensor.ThresholdMax.HasValue && !sensor.ThresholdMin.HasValue) return;
 
-        bool triggered = false;
-        string actionTarget = "OFF";
+        // Lấy các thiết bị output được map với sensor này và đang ở chế độ AUTO
+        var linkedDevices = await _deviceRepository.GetOutputDevicesBySensorIdAsync(sensor.DeviceId);
+        var autoOutputs = linkedDevices.Where(d => d.Auto).ToList();
 
-        // Simple mock automation rule based on thresholds
-        if (sensor.ThresholdMax.HasValue && value > sensor.ThresholdMax.Value)
+        foreach (var output in autoOutputs)
         {
-            triggered = true;
-            actionTarget = "ON"; // Example: Turn ON Cooling
-        }
-        else if (sensor.ThresholdMin.HasValue && value < sensor.ThresholdMin.Value)
-        {
-            triggered = true;
-            actionTarget = "ON"; // Example: Turn ON Heater
-        }
-        else
-        {
-            // Back to normal bounds -> Auto Turn OFF
-            triggered = true;
-            actionTarget = "OFF";
-        }
+            DeviceStatus? targetStatus = null;
+            string payload = "0";
 
-        if (triggered)
-        {
-            var roomDevices = await _deviceRepository.GetAllByRoomIdAsync(sensor.DroomId);
-            var autoOutputs = roomDevices.OfType<OutputDevice>().Where(d => d.Auto).ToList();
-
-            foreach (var output in autoOutputs)
+            // KỊCH BẢN 1: Vượt Max thì Bật, Dưới Min thì Tắt
+            // KỊCH BẢN 1: Vượt Max thì Bật (50), Dưới Min thì Tắt (0)
+            if (sensor.ThresholdMax.HasValue && value > sensor.ThresholdMax.Value)
             {
-                DeviceStatus targetStatus = actionTarget == "ON" ? DeviceStatus.ON : DeviceStatus.OFF;
-                
-                if (output.OnOffState != targetStatus)
+                // Nếu đang OFF hoặc đang ở trạng thái AUTO (chưa xác định ON/OFF)
+                if (output.OnOffState == DeviceStatus.OFF || output.OnOffState == DeviceStatus.AUTO)
                 {
-                    output.OnOffState = targetStatus;
-                    output.UpdateDate = DateTime.UtcNow;
-                    await _deviceRepository.UpdateAsync(output);
-
-                    await _mqttService.PublishAsync(output.FeedKey, actionTarget == "ON" ? "1" : "0");
-
-                    var log = new ActionLog
-                    {
-                        LogsId = Guid.NewGuid(),
-                        Timestamp = DateTime.UtcNow,
-                        LogType = LogType.AUTO,
-                        DeviceName = output.Name,
-                        Action = $"Turn {targetStatus}",
-                        Detail = $"Sensor {sensor.Name} value {value} triggered automation. Thresholds: [{sensor.ThresholdMin}, {sensor.ThresholdMax}]",
-                        LogdeviceId = output.DeviceId
-                    };
-                    await _actionLogRepository.AddAsync(log);
+                    targetStatus = DeviceStatus.ON;
+                    payload = "50";
                 }
+            }
+            else if (sensor.ThresholdMin.HasValue && value < sensor.ThresholdMin.Value)
+            {
+                // Nếu đang ON hoặc đang ở trạng thái AUTO
+                if (output.OnOffState == DeviceStatus.ON || output.OnOffState == DeviceStatus.AUTO)
+                {
+                    targetStatus = DeviceStatus.OFF;
+                    payload = "0";
+                }
+            }
+
+            if (targetStatus.HasValue)
+            {
+                output.OnOffState = targetStatus.Value;
+                output.CurrentValue = (targetStatus.Value == DeviceStatus.ON) ? 50 : 0;
+                output.UpdateDate = DateTime.UtcNow;
+                await _deviceRepository.UpdateAsync(output);
+
+                await _mqttService.PublishAsync(output.FeedKey, payload);
+
+                var log = new ActionLog
+                {
+                    LogsId = Guid.NewGuid(),
+                    Timestamp = DateTime.UtcNow,
+                    LogType = LogType.AUTO,
+                    DeviceName = output.Name,
+                    Action = $"Auto Turn {targetStatus}",
+                    Detail = $"Sensor {sensor.Name} value {value} triggered automation. Thresholds: [Min: {sensor.ThresholdMin}, Max: {sensor.ThresholdMax}]",
+                    LogdeviceId = output.DeviceId
+                };
+                await _actionLogRepository.AddAsync(log);
+                
+                _logger.LogInformation($"[AUTO] Sensor {sensor.Name} ({value}) triggered {output.Name} to {targetStatus} (CurrentValue: {output.CurrentValue})");
             }
         }
     }
