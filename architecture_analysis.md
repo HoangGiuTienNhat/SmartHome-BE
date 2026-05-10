@@ -14,7 +14,7 @@ Dự án được xây dựng theo kiến trúc **Clean Architecture** (Kiến t
 ### 1.2. SmartHome.Application (Lớp Ứng Dụng)
 - **Nhiệm vụ:** Chứa logic nghiệp vụ (Business Logic) của ứng dụng. Nó điều phối luồng dữ liệu giữa Domain và các lớp bên ngoài.
 - **Thành phần chính:**
-    - `Services/`: Triển khai các dịch vụ như `AuthService`, `DeviceService`, `MqttMessageProcessor`.
+    - `Services/`: Triển khai các dịch vụ như `AuthService` (đã bổ sung logic đổi mật khẩu), `DeviceService`, `MqttMessageProcessor` (đã bổ sung logic ghi log cho Sensor).
     - `DTOs/`: (Data Transfer Objects) Các lớp chứa dữ liệu để truyền tải giữa API và Application (Requests/Responses).
     - `Interfaces/Services/`: Định nghĩa các Service để lớp API sử dụng.
 

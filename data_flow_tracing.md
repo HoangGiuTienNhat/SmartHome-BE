@@ -23,8 +23,10 @@ Hệ thống xử lý hai luồng dữ liệu chính: Luồng HTTP Request (từ
 3.  **Processor (`MqttMessageProcessor`):**
     - **Nếu là Sensor:**
         - Lưu giá trị mới vào bảng `SensorData`.
+        - **Mới:** Tạo một `ActionLog` ghi nhận việc nhận dữ liệu ("Data Received").
         - Kiểm tra ngưỡng (`ThresholdMin`, `ThresholdMax`).
-        - Nếu vượt ngưỡng, tự động gửi lệnh bật/tắt tới các thiết bị `OutputDevice` liên quan (Logic tự động hóa).
+        - Nếu vượt ngưỡng -> Tự động gửi lệnh bật/tắt tới các thiết bị `OutputDevice` liên quan.
+        - **Mới:** Tạo thêm một `ActionLog` cho Sensor để đánh dấu việc nó đã kích hoạt thiết bị Output ("Triggered Output").
     - **Nếu là OutputDevice:**
         - Cập nhật trạng thái thực tế của thiết bị vào DB (Đồng bộ hóa).
         - Ghi log nếu có sự thay đổi trạng thái (ví dụ: người dùng nhấn nút cứng tại thiết bị).

@@ -86,7 +86,21 @@ public class MqttMessageProcessor : IMqttMessageProcessor
             };
             await _sensorDataRepository.AddAsync(sensorData);
 
-            // 2. Chạy logic tự động hóa
+            // 2. Ghi log cho Sensor (Chỉ log khi có thay đổi hoặc định kỳ để tránh spam)
+            // Ở đây tôi log mọi lần nhận để bạn thấy data ngay, sau này có thể tối ưu lại
+            var sensorLog = new ActionLog
+            {
+                LogsId = Guid.NewGuid(),
+                Timestamp = DateTime.UtcNow,
+                LogType = LogType.AUTO,
+                DeviceName = sensor.Name,
+                Action = "Data Received",
+                Detail = $"Sensor {sensor.Name} recorded value: {value}",
+                LogdeviceId = sensor.DeviceId
+            };
+            await _actionLogRepository.AddAsync(sensorLog);
+
+            // 3. Chạy logic tự động hóa
             await VerifyAutomationThresholds(sensor, value);
         }
         // ==========================================
@@ -204,6 +218,7 @@ public class MqttMessageProcessor : IMqttMessageProcessor
 
                 await _mqttService.PublishAsync(output.FeedKey, payload);
 
+                // Log cho thiết bị Output (Đã có)
                 var log = new ActionLog
                 {
                     LogsId = Guid.NewGuid(),
@@ -215,6 +230,19 @@ public class MqttMessageProcessor : IMqttMessageProcessor
                     LogdeviceId = output.DeviceId
                 };
                 await _actionLogRepository.AddAsync(log);
+
+                // THÊM: Log cho chính Sensor (Để user biết sensor này đã ra lệnh)
+                var sensorActionLog = new ActionLog
+                {
+                    LogsId = Guid.NewGuid(),
+                    Timestamp = DateTime.UtcNow,
+                    LogType = LogType.AUTO,
+                    DeviceName = sensor.Name,
+                    Action = "Triggered Output",
+                    Detail = $"Value {value} crossed threshold. Sent command {targetStatus} to {output.Name}.",
+                    LogdeviceId = sensor.DeviceId
+                };
+                await _actionLogRepository.AddAsync(sensorActionLog);
                 
                 _logger.LogInformation($"[AUTO] Sensor {sensor.Name} ({value}) triggered {output.Name} to {targetStatus} (CurrentValue: {output.CurrentValue})");
             }
