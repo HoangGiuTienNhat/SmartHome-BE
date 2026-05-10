@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartHome.Application.DTOs.Requests;
 using SmartHome.Application.Interfaces.Services;
+using System.Security.Claims;
 
 namespace SmartHome.API.Controllers;
 
@@ -27,5 +29,14 @@ public class AuthController : ControllerBase
     {
         var response = await _authService.LoginAsync(request);
         return Ok(response);
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        await _authService.ChangePasswordAsync(userId, request);
+        return Ok(new { message = "Password changed successfully." });
     }
 }

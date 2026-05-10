@@ -66,6 +66,28 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new Exception("User not found.");
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.Password))
+        {
+            throw new Exception("Old password is incorrect.");
+        }
+
+        if (request.NewPassword != request.ConfirmPassword)
+        {
+            throw new Exception("New password and confirm password do not match.");
+        }
+
+        user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await _userRepository.UpdateAsync(user);
+    }
+
     private string GenerateJwtToken(User user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");

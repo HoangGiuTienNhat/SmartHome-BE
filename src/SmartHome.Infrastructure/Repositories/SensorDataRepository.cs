@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SmartHome.Application.DTOs.Responses;
 using SmartHome.Domain.Entities;
 using SmartHome.Domain.Interfaces.Repositories;
 using SmartHome.Infrastructure.Data;
@@ -14,9 +15,12 @@ public class SensorDataRepository : ISensorDataRepository
         _context = context;
     }
 
-    public async Task<IEnumerable<SensorData>> GetDataForDeviceAsync(Guid deviceId, DateTime? startDate, DateTime? endDate)
+    public async Task<IEnumerable<SensorDataDto>> GetDataForDeviceAsync(Guid userId, Guid deviceId, DateTime? startDate, DateTime? endDate)
     {
-        var query = _context.SensorData.Where(sd => sd.SensorDeviceId == deviceId);
+        var query = _context.SensorData
+            .Include(sd => sd.Sensor)
+                .ThenInclude(s => s.Room)
+            .Where(sd => sd.SensorDeviceId == deviceId && sd.Sensor.Room.RuserId == userId);
 
         if (startDate.HasValue)
         {
@@ -28,7 +32,16 @@ public class SensorDataRepository : ISensorDataRepository
             query = query.Where(sd => sd.Time <= endDate.Value);
         }
 
-        return await query.OrderBy(sd => sd.Time).ToListAsync();
+        return await query
+            .OrderBy(sd => sd.Time)
+            .Select(sd => new SensorDataDto
+            {
+                Id = sd.Id,
+                SensorDeviceId = sd.SensorDeviceId,
+                Time = sd.Time,
+                Value = sd.Value
+            })
+            .ToListAsync();
     }
 
     public async Task AddAsync(SensorData sensorData)
