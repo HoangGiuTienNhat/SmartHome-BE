@@ -1,5 +1,8 @@
+# SmartHome API Documentation
 
 *Lưu ý: Ngoại trừ 2 API của phần Authentication, tất cả các API còn lại đều bắt buộc phải có Header xác thực: `Authorization: Bearer <your_jwt_token>`.*
+
+**Base URL:** `https://localhost:7096` (hoặc `http://localhost:5189`)
 
 ---
 
@@ -11,9 +14,17 @@
 * **Body:**
 ```json
 {
-  "email": "nhat.nguyen@example.com", // string (email format)
-  "password": "StrongPassword123!",   // string
-  "full_name": "Nguyen Tien Nhat"     // string
+  "email": "nhat.nguyen@example.com",
+  "password": "StrongPassword123!",
+  "fullName": "Nguyen Tien Nhat"
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "email": "nhat.nguyen@example.com",
+  "fullName": "Nguyen Tien Nhat"
 }
 ```
 
@@ -23,8 +34,16 @@
 * **Body:**
 ```json
 {
-  "email": "nhat.nguyen@example.com", // string
-  "password": "StrongPassword123!"    // string
+  "email": "nhat.nguyen@example.com",
+  "password": "StrongPassword123!"
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "email": "nhat.nguyen@example.com",
+  "fullName": "Nguyen Tien Nhat"
 }
 ```
 
@@ -35,7 +54,19 @@
 #### 2.1. Lấy danh sách phòng
 * **Endpoint:** `GET /api/rooms`
 * **Headers:** `Authorization: Bearer <token>`
-* **Params/Body:** Không có.
+* **Response (200 OK):**
+```json
+[
+  {
+    "roomId": "d3b07384-d9a7-4b68-9128-4eb7d0046b0a",
+    "roomName": "Phòng Khách"
+  },
+  {
+    "roomId": "a1b2c3d4-e5f6-7890-1234-56789abcdef0",
+    "roomName": "Phòng Ngủ"
+  }
+]
+```
 
 #### 2.2. Tạo phòng mới
 * **Endpoint:** `POST /api/rooms`
@@ -43,25 +74,40 @@
 * **Body:**
 ```json
 {
-  "room_name": "Phòng Khách" // string (bắt buộc)
+  "roomName": "Nhà Bếp"
+}
+```
+* **Response (201 Created):**
+```json
+{
+  "roomId": "e2f3g4h5-i6j7-k8l9-m0n1-o2p3q4r5s6t7",
+  "roomName": "Nhà Bếp"
 }
 ```
 
 #### 2.3. Cập nhật thông tin phòng
 * **Endpoint:** `PUT /api/rooms/{roomId}`
 * **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
-* **Route Parameter:** `roomId` = `d3b07384-d9a7-4b68-9128-4eb7d0046b0a` (Guid)
+* **Route Parameter:** `roomId` (Guid)
 * **Body:**
 ```json
 {
-  "room_name": "Phòng Khách Tầng 1" // string
+  "roomName": "Phòng Khách Tầng 1"
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "roomId": "d3b07384-d9a7-4b68-9128-4eb7d0046b0a",
+  "roomName": "Phòng Khách Tầng 1"
 }
 ```
 
 #### 2.4. Xóa phòng
 * **Endpoint:** `DELETE /api/rooms/{roomId}`
 * **Headers:** `Authorization: Bearer <token>`
-* **Route Parameter:** `roomId` = `d3b07384-d9a7-4b68-9128-4eb7d0046b0a` (Guid)
+* **Route Parameter:** `roomId` (Guid)
+* **Response (204 No Content):** (Không có body)
 
 ---
 
@@ -70,80 +116,156 @@
 #### 3.1. Lấy danh sách thiết bị trong phòng
 * **Endpoint:** `GET /api/rooms/{roomId}/devices`
 * **Headers:** `Authorization: Bearer <token>`
-* **Route Parameter:** `roomId` = `d3b07384-d9a7-4b68-9128-4eb7d0046b0a` (Guid)
+* **Route Parameter:** `roomId` (Guid)
+* **Response (200 OK):**
+```json
+[
+  {
+    "deviceId": "5f3c1b82-8d7b-4b1a-a2c3-1d4e5f6g7h8i",
+    "deviceName": "Đèn trần",
+    "feedKey": "phong-khach-den-tran",
+    "type": "OUTPUT",
+    "state": "CONNECTED",
+    "auto": false,
+    "onOffState": "OFF",
+    "currentValue": 0,
+    "connectedSensorId": "7e8f9g0h-1i2j-3k4l-5m6n-7o8p9q0r1s2t",
+    "thresholdMin": null,
+    "thresholdMax": null
+  },
+  {
+    "deviceId": "7e8f9g0h-1i2j-3k4l-5m6n-7o8p9q0r1s2t",
+    "deviceName": "Cảm biến nhiệt độ",
+    "feedKey": "phong-khach-cam-bien-nhiet-do",
+    "type": "SENSOR",
+    "state": "CONNECTED",
+    "auto": null,
+    "onOffState": null,
+    "currentValue": null,
+    "connectedSensorId": null,
+    "thresholdMin": 20.0,
+    "thresholdMax": 35.0
+  }
+]
+```
 
 #### 3.2. Thêm thiết bị mới
 * **Endpoint:** `POST /api/rooms/{roomId}/devices`
 * **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
-* **Route Parameter:** `roomId` = `d3b07384-d9a7-4b68-9128-4eb7d0046b0a` (Guid)
-* **Body (Trường hợp là Thiết bị đầu ra - Output):**
+* **Route Parameter:** `roomId` (Guid)
+* **Body (Thiết bị đầu ra - Output):**
 ```json
 {
-  "device_name": "Đèn trần", // string
-  "type": "Output",          // string (Enum: "Output", "Sensor")
-  "connected_sensor_id": "guid" // Guid (tùy chọn, ID cảm biến liên kết để chạy AUTO)
+  "deviceName": "Quạt thông gió",
+  "type": "Output",
+  "connectedSensorId": "7e8f9g0h-1i2j-3k4l-5m6n-7o8p9q0r1s2t"
 }
 ```
-* **Body (Trường hợp là Cảm biến - Sensor):**
+* **Body (Cảm biến - Sensor):**
 ```json
 {
-  "device_name": "Cảm biến nhiệt độ", // string
-  "type": "Sensor",                   // string
-  "threshold_min": 18.5,              // float (tùy chọn, chỉ dành cho Sensor)
-  "threshold_max": 30.0               // float (tùy chọn, chỉ dành cho Sensor)
+  "deviceName": "Cảm biến độ ẩm",
+  "type": "Sensor",
+  "thresholdMin": 40.0,
+  "thresholdMax": 80.0
 }
 ```
+* **Response (200 OK):** (Trả về thông tin thiết bị vừa tạo tương tự 3.1)
 
-#### 3.3. Cập nhật thiết bị / Cấu hình ngưỡng cảm biến
+#### 3.3. Cập nhật thiết bị
 * **Endpoint:** `PUT /api/devices/{deviceId}`
 * **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
-* **Route Parameter:** `deviceId` = `5f3c1b82-8d7b-4b1a-a2c3-1d4e5f6g7h8i` (Guid)
+* **Route Parameter:** `deviceId` (Guid)
 * **Body:**
 ```json
 {
-  "device_name": "Cảm biến nhiệt độ góc phòng", // string (tùy chọn cập nhật)
-  "threshold_min": 20.0,                        // float (tùy chọn)
-  "threshold_max": 28.5,                        // float (tùy chọn)
-  "connected_sensor_id": "guid"                 // Guid (tùy chọn cập nhật cho Output Device)
+  "deviceName": "Cảm biến nhiệt độ phòng ngủ",
+  "thresholdMin": 22.5,
+  "thresholdMax": 28.0,
+  "connectedSensorId": "guid-moi"
 }
 ```
+* **Response (200 OK):** (Trả về thông tin thiết bị sau khi cập nhật)
 
 #### 3.4. Xóa thiết bị
 * **Endpoint:** `DELETE /api/devices/{deviceId}`
 * **Headers:** `Authorization: Bearer <token>`
-* **Route Parameter:** `deviceId` = `5f3c1b82-8d7b-4b1a-a2c3-1d4e5f6g7h8i` (Guid)
+* **Route Parameter:** `deviceId` (Guid)
+* **Response (204 No Content):** (Không có body)
 
 ---
 
 ### 4. Điều khiển & Giám sát (Control & Data)
 
-#### 4.1. Điều khiển thiết bị đầu ra (Gọi lệnh gửi qua Adafruit)
+#### 4.1. Điều khiển thiết bị đầu ra
 * **Endpoint:** `POST /api/devices/{deviceId}/control`
 * **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
-* **Route Parameter:** `deviceId` = `a1b2c3d4-e5f6-7890-1234-56789abcdef0` (Guid - ID của thiết bị Output)
+* **Route Parameter:** `deviceId` (Guid)
 * **Body:**
 ```json
 {
-  "status": "ON", // string (Enum: "ON", "OFF", "AUTO")
-  "value": 50     // decimal (tùy chọn, ví dụ: độ sáng, tốc độ quạt)
+  "status": "ON", // "ON", "OFF", "AUTO"
+  "value": 50     // (Tùy chọn) Độ sáng, tốc độ... (0-100)
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "message": "Control command sent successfully."
 }
 ```
 
-#### 4.2. Lấy dữ liệu lịch sử của Cảm biến (Để vẽ biểu đồ)
+#### 4.2. Lấy dữ liệu lịch sử cảm biến
 * **Endpoint:** `GET /api/devices/{deviceId}/data`
 * **Headers:** `Authorization: Bearer <token>`
-* **Route Parameter:** `deviceId` = `5f3c1b82-8d7b-4b1a-a2c3-1d4e5f6g7h8i` (Guid - ID của Sensor)
-* **Query Parameters (Tùy chọn, dùng để lọc theo thời gian):**
-    * `startDate` = `2025-11-01T00:00:00Z` (DateTime ISO 8601)
-    * `endDate` = `2025-11-30T23:59:59Z` (DateTime ISO 8601)
-* **URL Minh họa:** `/api/devices/{deviceId}/data?startDate=2025-11-01T00:00:00Z&endDate=2025-11-30T23:59:59Z`
+* **Route Parameter:** `deviceId` (Guid)
+* **Query Parameters (Tùy chọn):**
+    * `startDate`: `2026-05-01T00:00:00Z`
+    * `endDate`: `2026-05-10T23:59:59Z`
+* **Response (200 OK):**
+```json
+[
+  {
+    "id": "b1c2d3e4-f5g6-7h8i-9j0k-1l2m3n4o5p6q",
+    "sensorDeviceId": "7e8f9g0h-1i2j-3k4l-5m6n-7o8p9q0r1s2t",
+    "time": "2026-05-10T08:00:00Z",
+    "value": 25.5
+  },
+  {
+    "id": "c2d3e4f5-g6h7-8i9j-0k1l-2m3n4o5p6q7r",
+    "sensorDeviceId": "7e8f9g0h-1i2j-3k4l-5m6n-7o8p9q0r1s2t",
+    "time": "2026-05-10T08:05:00Z",
+    "value": 26.0
+  }
+]
+```
 
-#### 4.3. Lấy lịch sử hoạt động (Action Logs)
+#### 4.3. Lấy lịch sử hoạt động chung (Action Logs)
 * **Endpoint:** `GET /api/logs`
 * **Headers:** `Authorization: Bearer <token>`
-* **Query Parameters (Phân trang):**
-    * `page` = `1` (int)
-    * `limit` = `20` (int)
-* **URL Minh họa:** `/api/logs?page=1&limit=20`
+* **Query Parameters (Tùy chọn):**
+    * `page`: `1` (mặc định)
+    * `limit`: `20` (mặc định)
+* **Response (200 OK):**
+```json
+[
+  {
+    "logsId": "a1b2c3d4-e5f6-7890-1234-56789abcdef0",
+    "timestamp": "2026-05-10T09:15:00Z",
+    "logType": 0, // 0: MANUAL, 1: AUTO
+    "deviceName": "Đèn trần",
+    "action": "Turn ON",
+    "detail": "User turned ON device 'Đèn trần' via Interface.",
+    "logdeviceId": "5f3c1b82-8d7b-4b1a-a2c3-1d4e5f6g7h8i"
+  }
+]
+```
 
----
+#### 4.4. Lấy lịch sử hoạt động của một thiết bị cụ thể
+* **Endpoint:** `GET /api/devices/{deviceId}/logs`
+* **Headers:** `Authorization: Bearer <token>`
+* **Route Parameter:** `deviceId` (Guid)
+* **Query Parameters (Tùy chọn):**
+    * `page`: `1`
+    * `limit`: `20`
+* **Response (200 OK):** (Trả về mảng tương tự 4.3)
