@@ -15,10 +15,29 @@ public class SmartHomeDbContext : DbContext
     public DbSet<Sensor> Sensors { get; set; } = null!;
     public DbSet<SensorData> SensorData { get; set; } = null!;
     public DbSet<ActionLog> ActionLogs { get; set; } = null!;
+    public DbSet<AiLog> AiLogs { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // 8. AiLog
+        modelBuilder.Entity<AiLog>(entity =>
+        {
+            entity.ToTable("ai_logs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.RawCommand).HasColumnName("raw_command");
+            entity.Property(e => e.AiResponse).HasColumnName("ai_response");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+            entity.HasOne(a => a.User)
+                  .WithMany()
+                  .HasForeignKey(a => a.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // 1. Users
         modelBuilder.Entity<User>(entity =>

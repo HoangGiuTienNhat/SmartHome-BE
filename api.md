@@ -262,10 +262,46 @@
 ```
 
 #### 4.4. Lấy lịch sử hoạt động của một thiết bị cụ thể
-* **Endpoint:** `GET /api/devices/{deviceId}/logs`
-* **Headers:** `Authorization: Bearer <token>`
-* **Route Parameter:** `deviceId` (Guid)
-* **Query Parameters (Tùy chọn):**
-    * `page`: `1`
-    * `limit`: `20`
-* **Response (200 OK):** (Trả về mảng tương tự 4.3)
+* * *
+
+### 5. Điều khiển bằng trí tuệ nhân tạo (AI Control)
+
+#### 5.1. Điều khiển thiết bị qua câu lệnh tự nhiên
+* **Endpoint:** `POST /api/ai/control`
+* **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
+* **Body:**
+```json
+{
+  "command": "Bật quạt trong phòng khách 1"
+}
+```
+* **Phản hồi thành công (200 OK):**
+```json
+{
+  "status": "SUCCESS",
+  "responseMessage": "Đã bật quạt trong phòng khách 1 cho bạn rồi nhé!"
+}
+```
+* **Phản hồi khi câu lệnh không rõ ràng (200 OK):**
+```json
+{
+  "status": "AMBIGUOUS",
+  "responseMessage": "Tôi tìm thấy nhiều thiết bị 'quạt', vui lòng chỉ rõ ở phòng nào?"
+}
+```
+* **Phản hồi khi không tìm thấy (200 OK):**
+```json
+{
+  "status": "NOT_FOUND",
+  "responseMessage": "Không tìm thấy thiết bị hoặc phòng phù hợp trong danh sách của bạn."
+}
+```
+* **Phản hồi lỗi hệ thống/AI (200 OK):**
+```json
+{
+  "status": "ERROR",
+  "responseMessage": "Lỗi kết nối AI: [Chi tiết lỗi]"
+}
+```
+
+---

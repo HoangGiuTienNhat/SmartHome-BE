@@ -219,8 +219,8 @@ public class DeviceService : IDeviceService
                         if (sensor.ThresholdMax.HasValue && latestData.Value > sensor.ThresholdMax.Value)
                         {
                             outputDevice.OnOffState = DeviceStatus.ON;
-                            outputDevice.CurrentValue = 50;
-                            payloadValue = "50";
+                            outputDevice.CurrentValue = 1;
+                            payloadValue = "1";
                         }
                         else if (sensor.ThresholdMin.HasValue && latestData.Value < sensor.ThresholdMin.Value)
                         {

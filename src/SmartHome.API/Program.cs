@@ -26,10 +26,13 @@ builder.Services.AddScoped<IRoomRepository, RoomRepository>();
 builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
 builder.Services.AddScoped<ISensorDataRepository, SensorDataRepository>();
 builder.Services.AddScoped<IActionLogRepository, ActionLogRepository>();
+builder.Services.AddScoped<IAiLogRepository, AiLogRepository>();
 
 // Services
 builder.Services.AddHttpClient<IAdafruitApiService, AdafruitApiService>();
+builder.Services.AddHttpClient<IAiProvider, GeminiAiProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAiService, AiService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IMqttMessageProcessor, MqttMessageProcessor>();

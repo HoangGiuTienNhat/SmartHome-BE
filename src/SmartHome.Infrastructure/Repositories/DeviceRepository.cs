@@ -28,6 +28,14 @@ public class DeviceRepository : IDeviceRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<OutputDevice>> GetOutputDevicesByUserIdAsync(Guid userId)
+    {
+        return await _context.OutputDevices
+            .Include(d => d.Room)
+            .Where(d => d.Room.RuserId == userId)
+            .ToListAsync();
+    }
+
     public async Task<Device?> GetByIdAsync(Guid deviceId)
     {
         return await _context.Devices.FindAsync(deviceId);
